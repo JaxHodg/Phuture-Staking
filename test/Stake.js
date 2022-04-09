@@ -41,6 +41,7 @@ describe("Staking contracts", function () {
 
   describe("Single user staking", function () {
     it("Should stake 50 tokens", async function () {
+      // Stakes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.stake(50, addr1.address);
 
@@ -50,9 +51,15 @@ describe("Staking contracts", function () {
     });
 
     it("Should distribute 50 tokens as reward", async function () {
+      // Stakes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.stake(50, addr1.address);
 
+      expect(await Staking.staked(addr1.address)).to.equal(50);
+      expect(await Staking.totalAssets()).to.equal(50);
+      expect(await Staking.maxUnstake(addr1.address)).to.equal(50);
+
+      // Distributes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.distribute(50, addr1.address);
 
@@ -67,12 +74,23 @@ describe("Staking contracts", function () {
     });
 
     it("Should withdraw 50 token stake + 50 token reward", async function () {
+      // Stakes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.stake(50, addr1.address);
 
+      expect(await Staking.staked(addr1.address)).to.equal(50);
+      expect(await Staking.totalAssets()).to.equal(50);
+      expect(await Staking.maxUnstake(addr1.address)).to.equal(50);
+
+      // Distributes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.distribute(50, addr1.address);
 
+      expect(await Staking.staked(addr1.address)).to.equal(50);
+      expect(await Staking.totalAssets()).to.equal(50);
+      expect(await Staking.maxUnstake(addr1.address)).to.equal(100);
+
+      // Unstakes 50 tokens from addr1
       await Staking.unstake(100, addr1.address, addr1.address);
 
       expect(await Staking.staked(addr1.address)).to.equal(0);
@@ -84,6 +102,7 @@ describe("Staking contracts", function () {
     });
 
     it("Should recalculate stake when staking more", async function () {
+      // Stakes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.stake(50, addr1.address);
 
@@ -91,6 +110,7 @@ describe("Staking contracts", function () {
       expect(await Staking.totalAssets()).to.equal(50);
       expect(await Staking.maxUnstake(addr1.address)).to.equal(50);
 
+      // Distributes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.distribute(50, addr1.address);
 
@@ -98,6 +118,7 @@ describe("Staking contracts", function () {
       expect(await Staking.totalAssets()).to.equal(50);
       expect(await Staking.maxUnstake(addr1.address)).to.equal(100);
 
+      // Stakes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.stake(50, addr1.address);
 
@@ -107,6 +128,7 @@ describe("Staking contracts", function () {
     });
 
     it("Should correctly calculate and reduce S_t", async function () {
+      // Stakes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.stake(50, addr1.address);
 
@@ -117,6 +139,7 @@ describe("Staking contracts", function () {
       expect(await Staking.s_num()).to.equal(0);
       expect(await Staking.s_den()).to.equal(1);
 
+      // Distributes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.distribute(50, addr1.address);
 
@@ -124,9 +147,10 @@ describe("Staking contracts", function () {
       expect(await Staking.totalAssets()).to.equal(50);
       expect(await Staking.s_0_num(addr1.address)).to.equal(0);
       expect(await Staking.s_0_den(addr1.address)).to.equal(1);
-      expect(await Staking.s_num()).to.equal(1); // 50 rewards / 50 total staked
+      expect(await Staking.s_num()).to.equal(1);
       expect(await Staking.s_den()).to.equal(1);
 
+      // Stakes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.stake(50, addr1.address);
 
@@ -134,9 +158,10 @@ describe("Staking contracts", function () {
       expect(await Staking.totalAssets()).to.equal(150);
       expect(await Staking.s_0_num(addr1.address)).to.equal(1);
       expect(await Staking.s_0_den(addr1.address)).to.equal(1);
-      expect(await Staking.s_num()).to.equal(1); // 50 rewards / 150 total staked
+      expect(await Staking.s_num()).to.equal(1);
       expect(await Staking.s_den()).to.equal(1);
 
+      // Distributes 50 tokens from addr1
       await MyToken.approve(Staking.address, 50);
       await Staking.distribute(50, addr1.address);
 
@@ -144,7 +169,7 @@ describe("Staking contracts", function () {
       expect(await Staking.totalAssets()).to.equal(150);
       expect(await Staking.s_0_num(addr1.address)).to.equal(1);
       expect(await Staking.s_0_den(addr1.address)).to.equal(1);
-      expect(await Staking.s_num()).to.equal(4); // 50 rewards / 150 total staked
+      expect(await Staking.s_num()).to.equal(4);
       expect(await Staking.s_den()).to.equal(3);
     });
   });
