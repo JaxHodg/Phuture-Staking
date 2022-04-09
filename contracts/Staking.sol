@@ -2,52 +2,61 @@
 pragma solidity ^0.8.0;
 
 import "./IERC20.sol";
-import "./MyToken.sol" as MyToken;
+import "./MyToken.sol";
 
 contract Staking {
+    // Address for staked ERC20 token
     IERC20 public asset;
-
+    // Number of staked tokens
     uint256 public totalAssets;
+
+    // S_t function used to calculate staking rewards, seperated into numerator
+    // and denominator
     uint256 public s_num;
     uint256 public s_den;
-    mapping(address => uint256) public staked;
     mapping(address => uint256) public s_0_num;
     mapping(address => uint256) public s_0_den;
 
-    constructor(address _asset) {
-        asset = IERC20(_asset);
+    // Map from each address to number of staked tokens
+    mapping(address => uint256) public staked;
+
+    /**
+     * @notice Constructor for staking contract
+     * @param asset_ Address for staked ERC20 token
+     */
+    constructor(address asset_) {
+        asset = IERC20(asset_);
         totalAssets = 0;
         s_num = 0;
         s_den = 1;
     }
 
     /**
-     * @notice Function to stake a specific amount of tokens
+     * @notice Stakes a specific amount of tokens
      * @param assets number of tokens to stake
-     * @param receiver address to stake tokens for
-     * @return success boolean of whether stake was unsuccessful
+     * @param sender address of the staked tokens' owner
+     * @return success boolean of whether stake was successful
      */
-    function stake(uint256 assets, address receiver) public returns (bool) {
-        require(assets != 0);
-        require(asset.transferFrom(receiver, address(this), assets));
+    function stake(uint256 assets, address sender) public returns (bool) {
+        require(assets > 0);
+        require(asset.transferFrom(sender, address(this), assets));
 
-        uint256 maxAssets = maxUnstake(receiver);
-        uint256 rewards = maxRewards(receiver);
-        if (maxAssets != 0) {
+        if (staked[sender] > 0) {
+            uint256 rewards = maxRewards(sender);
             totalAssets += assets + rewards;
-            staked[receiver] += assets + rewards;
+            staked[sender] += assets + rewards;
         } else {
             totalAssets += assets;
-            staked[receiver] = assets;
+            staked[sender] = assets;
         }
-        s_0_num[receiver] = s_num;
-        s_0_den[receiver] = s_den;
+        s_0_num[sender] = s_num;
+        s_0_den[sender] = s_den;
 
         return true;
     }
 
     /**
-     * @notice Function to unstake a specfic amount of tokens staked + rewards
+     * @notice Unstakes a specfic amount of tokens and their rewards
      * @param assets number of tokens to be withdrawn
      * @param receiver address to transfer tokens to
      * @param owner address to withdraw stake and rewards from
@@ -58,23 +67,26 @@ contract Staking {
         address receiver,
         address owner
     ) public returns (bool) {
+        require(assets > 0);
         require(msg.sender == owner);
 
         uint256 maxAssets = maxUnstake(owner);
-        require(maxAssets >= assets);
+        require(assets <= maxAssets);
 
-        totalAssets = totalAssets - staked[owner] + maxAssets - assets;
-        staked[owner] = maxAssets - assets;
+        uint256 rewards = maxRewards(owner);
+        totalAssets = totalAssets + rewards - assets;
+        staked[owner] = staked[owner] + rewards - assets;
 
         s_0_num[owner] = s_num;
         s_0_den[owner] = s_den;
 
         require(asset.transfer(receiver, assets));
+
         return true;
     }
 
     /**
-     * @notice Function to calculate the maximum tokens withdrawable
+     * @notice Calculates the maximum number of tokens withdrawable
      * @param owner address to calculate rewards for
      * @return maxAssets number of tokens that be withdrawn for the address
      */
@@ -92,18 +104,6 @@ contract Staking {
      * @return maxRewards number of tokens assigned as rewards
      */
     function maxRewards(address owner) public view returns (uint256) {
-        if (staked[owner] == 0) {
-            return 0;
-        }
-        uint256 reward_a = staked[owner] * (s_num);
-        reward_a /= s_den;
-        uint256 reward_b = staked[owner] * s_0_num[owner];
-        reward_b /= s_0_den[owner];
-
-        return reward_a - reward_b;
-    }
-
-    function whatMaxRewards(address owner) public view returns (uint256) {
         if (staked[owner] == 0) {
             return 0;
         }
@@ -139,7 +139,7 @@ contract Staking {
      * @param b the second number
      * @return gcf the greatest common factor of the two numbers
      */
-    function gcf(uint256 a, uint256 b) private pure returns (uint256) {
+    function gcf(uint256 a, uint256 b) public pure returns (uint256) {
         uint256 r = a % b;
         while (r != 0) {
             a = b;

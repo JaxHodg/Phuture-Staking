@@ -31,6 +31,14 @@ describe("Staking contracts", function () {
     });
   });
 
+  describe("Misc", function () {
+    it("GCF should return the correct answer", async function () {
+      expect(await Staking.gcf(7216, 5430)).to.equal(2);
+      expect(await Staking.gcf(280602, 1806)).to.equal(42);
+      expect(await Staking.gcf(5, 10)).to.equal(5);
+    });
+  });
+
   describe("Single user staking", function () {
     it("Should stake 50 tokens", async function () {
       await MyToken.approve(Staking.address, 50);
