@@ -38,8 +38,11 @@ contract Staking {
      * @return success boolean of whether stake was successful
      */
     function stake(uint256 assets, address sender) public returns (bool) {
-        require(assets > 0);
-        require(asset.transferFrom(sender, address(this), assets));
+        require(assets > 0, "Number of tokens must be > 0");
+        require(
+            asset.transferFrom(sender, address(this), assets),
+            "Must transfer Tokens"
+        );
 
         if (staked[sender] > 0) {
             uint256 rewards = maxRewards(sender);
@@ -67,11 +70,11 @@ contract Staking {
         address receiver,
         address owner
     ) public returns (bool) {
-        require(assets > 0);
-        require(msg.sender == owner);
+        require(assets > 0, "Number of tokens must be > 0");
+        require(msg.sender == owner, "Only owner can withdraw");
 
         uint256 maxAssets = maxUnstake(owner);
-        require(assets <= maxAssets);
+        require(assets <= maxAssets, "Can't withdraw more than MaxUnstake");
 
         uint256 rewards = maxRewards(owner);
         totalAssets = totalAssets + rewards - assets;
@@ -80,7 +83,7 @@ contract Staking {
         s_0_num[owner] = s_num;
         s_0_den[owner] = s_den;
 
-        require(asset.transfer(receiver, assets));
+        require(asset.transfer(receiver, assets), "Unable to transfer Tokens");
 
         return true;
     }
@@ -99,7 +102,7 @@ contract Staking {
     }
 
     /**
-     * @notice Function to calculate current rewards owed on stake
+     * @notice Calculates current rewards owed on stake
      * @param owner address to calculate rewards for
      * @return maxRewards number of tokens assigned as rewards
      */
@@ -114,14 +117,17 @@ contract Staking {
     }
 
     /**
-     * @notice Function to distribute rewards to stakers
+     * @notice Distributes rewards to stakers
      * @param assets amount of reward tokens to transfer
      * @param sender address to transfer reward tokens from (must have approval)
      */
     function distribute(uint256 assets, address sender) public returns (bool) {
-        require(asset.transferFrom(sender, address(this), assets));
+        require(
+            asset.transferFrom(sender, address(this), assets),
+            "Must transfer Tokens"
+        );
 
-        require(totalAssets != 0);
+        require(totalAssets != 0, "No tokens staked");
 
         s_num = s_num * totalAssets + s_den * assets;
         s_den = s_den * totalAssets;
@@ -134,7 +140,7 @@ contract Staking {
     }
 
     /**
-     * @notice Function to calculate the greatest common factor of two numbers
+     * @notice Calculates the greatest common factor of two numbers
      * @param a the first number
      * @param b the second number
      * @return gcf the greatest common factor of the two numbers
